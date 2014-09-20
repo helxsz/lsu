@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en" ng-app="Dashboard">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Dashboard</title>
+
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="css/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css" href="css/dashboard/dashboard.css">
+  <link rel="stylesheet" type="text/css" href="css/themes/black.css">
+  <link href="css/animate.min.css" rel="stylesheet" type="text/css">
+
+
+  <script src="lib/jquery-1.11.1.min.js"></script>    
+  <script src="lib/bootstrap.min.js"></script>
+  <script src="lib/angular/angular.min.js"></script>
+  <script src="lib/angular/angular-route.min.js"></script>
+  <script src="lib/angular/angular-cookies.min.js"></script>
+  <script src="lib/underscore-min.js"></script>
+  <script src="lib/ui-bootstrap-tpls-0.11.0.min.js"></script>
+  <script src="lib/moment.min.js"></script>
+  <script src="lib/socket.min.js"></script>
+  <script src="lib/socket.io.js"></script>
+  <script src="lib/angular-file-upload.min.js"></script>
+  <script src="lib/satellizer.min.js"></script>
+
+  <!--<script src="lib/directive.js"></script>-->
+
+</head>
+<body ng-controller="MasterCtrl">
+  <div id="page-wrapper" ng-class="{'active': toggle}" ng-cloak>
+
+    <!-- Sidebar -->
+
+    <div id="sidebar-wrapper">
+      <ul class="sidebar">
+        <li class="sidebar-main">
+          <a style="cursor: pointer;" ng-click="toggleSidebar()">
+            Dashboard
+            <span class="menu-icon glyphicon glyphicon-transfer"></span>
+          </a>
+        </li>
+        <li class="sidebar-list">
+          <a href="#/profile" ng-cloak>
+            {{ currentUser.username }}
+            <span class="menu-icon">
+              <img style="width: 20px; height: 20px; border-radius: 2px;" alt="Gravatar" src="/default_user.jpeg">
+            </span>
+          </a>
+        </li>        
+        <li class="sidebar-title"><span>MANAGEMENT</span></li>
+        <li class="sidebar-list">
+          <a href="#/users">User<span class="menu-icon fa fa-users"></span></a>
+        </li>
+        <li class="sidebar-list">
+          <a href="#/sensors">Sensor<span class="menu-icon fa fa-tasks"></span></a>
+        </li>
+        <li class="sidebar-list">
+          <a href="#/analytics">Data<span class="menu-icon fa fa-cogs"></span></a>
+        </li>
+        <li class="sidebar-title separator"><span>QUICK LINKS</span></li>
+        <li class="sidebar-list">
+          <a href="#/" target="_blank">Forums <span class="menu-icon fa fa-external-link"></span></a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="col-xs-4">
+          <a href="https://github.com/Ehesp/Responsive-Dashboard" target="_blank">
+            Github
+          </a>
+        </div>
+        <div class="col-xs-4">
+          <a href="#" target="_blank">
+            About
+          </a>
+        </div>
+        <div class="col-xs-4">
+          <a href="#">
+            Support
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- End Sidebar -->
+
+    <div id="content-wrapper">
+      <div class="page-content">
+
+        <!-- Header Bar -->
+
+        <div class="row header" ng-controller="NavbarCtrl">
+          <div class="col-xs-12">
+            <div class="meta pull-left">
+              <div class="page">
+                Dashboard
+              </div>
+              <div class="breadcrumb-links">
+                Home / Dashboard
+              </div>
+            </div>
+            <div class="user pull-right">
+              <div class="item dropdown"  ng-if="isAuthenticated()">
+                <a href="#" class="dropdown-toggle">
+                  <img src="img/avatar.jpg">
+                </a>
+                <ul class="dropdown-menu dropdown-menu-right">
+                  <li class="dropdown-header">
+                    {{ currentUser.username }}
+                  </li>
+                  <li class="divider"></li>
+                  <li class="link">
+                    <a href="#/profile">
+                      Profile
+                    </a>
+                  </li>
+                  <li class="divider"></li>
+                  <li class="link">
+                    <a href="#/logout" ng-click="logout()">
+                      Logout
+                    </a>
+                  </li>
+                </ul>               
+              </div>
+              <div class="item dropdown">
+               <a href="#" class="dropdown-toggle">
+                  <i class="fa fa-bell-o"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-right">
+                  <li class="dropdown-header">
+                    Notifications
+                  </li>
+                  <li class="divider"></li>
+                  <li>
+                    <a href="#">Server Down!</a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- End Header Bar -->
+
+        <!-- Main Content -->
+
+          <div ng-view></div>
+
+        <!-- End Main Content -->
+
+      </div><!-- End Page Content -->
+    </div><!-- End Content Wrapper -->
+  </div><!-- End Page Wrapper -->
+
+
+<script>
+var app = angular.module('Dashboard', ['ui.bootstrap', 'ngCookies','ngRoute','btford.socket-io','satellizer','angularFileUpload']);
+app.directive('loading', function () {
+    return {
+        restrict: 'AE',
+        replace: 'false',
+        template: '<div class="loading"><div class="double-bounce1"></div><div class="double-bounce2"></div></div>'
+    }
+});
+
+app.directive('ngThumb', ['$window', function($window) {
+        var helper = {
+            support: !!($window.FileReader && $window.CanvasRenderingContext2D),
+            isFile: function(item) {
+                return angular.isObject(item) && item instanceof $window.File;
+            },
+            isImage: function(file) {
+                var type =  '|' + file.type.slice(file.type.lastIndexOf('/') + 1) + '|';
+                return '|jpg|png|jpeg|bmp|gif|'.indexOf(type) !== -1;
+            }
+        };
+
+        return {
+            restrict: 'A',
+            template: '<canvas/>',
+            link: function(scope, element, attributes) {
+                if (!helper.support) return;
+
+                var params = scope.$eval(attributes.ngThumb);
+
+                if (!helper.isFile(params.file)) return;
+                if (!helper.isImage(params.file)) return;
+
+                var canvas = element.find('canvas');
+                var reader = new FileReader();
+
+                reader.onload = onLoadFile;
+                reader.readAsDataURL(params.file);
+
+                function onLoadFile(event) {
+                    var img = new Image();
+                    img.onload = onLoadImage;
+                    img.src = event.target.result;
+                }
+
+                function onLoadImage() {
+                    var width = params.width || this.width / this.height * params.height;
+                    var height = params.height || this.height / this.width * params.width;
+                    canvas.attr({ width: width, height: height });
+                    canvas[0].getContext('2d').drawImage(this, 0, 0, width, height);
+                }
+            }
+        };
+}]);
+
+/*
+This directive allows us to pass a function in on an enter key to do what we want.
+ */
+app.directive('ngEnter', function () {
+    return function (scope, element, attrs) {
+        element.bind("keydown keypress", function (event) {
+            if(event.which === 13) {
+                scope.$apply(function (){
+                    scope.$eval(attrs.ngEnter);
+                });
+
+                event.preventDefault();
+            }
+        });
+    };
+});
+
+// https://app.userapp.io/js/directives/directives.js
+app.directive('ngEditable', function() {
+    return {
+        // can be in-lined or async loaded by xhr
+        // or inlined as JS string (using template property)
+        template: '<span class="editable-wrapper">' + '<span class="editclass" data-ng-hide="edit" data-ng-click="edit=true;value=model;">{{model}}</span>' + '<input type="text" data-ng-model="value" data-ng-blur="edit = false; model = value" data-ng-show="edit" data-ng-enter="model=value;edit=false;"/>' + '</span>',
+        scope: {
+            model: '=ngEditableModel',
+            update: '&ngEditable'
+        },
+        restrict: 'AE',
+        replace: true,
+        link: function(scope, element, attrs) {
+
+            var value = scope.$eval(attrs.ngEditableModel);
+            console.log('value  s,,,,,,,,,,,,' ,scope, attrs.ngEditableModel , value, scope.model);
+            var placeHolder = $(element).find('.editclass');
+            value = scope.model;
+
+            if (value == undefined || (value != undefined && value.length == 0)) {
+              placeHolder.text('None');
+              placeHolder.css('background','grey');
+              placeHolder.css('color','white');
+
+              $(element).attr("title", "Empty value. Click to edit.");
+              $(element).append(placeHolder);
+            }else{
+              placeHolder.css('background','white');
+              placeHolder.css('color','black');              
+            }
+
+            scope.focus = function() {
+                element.find("input").focus();
+            };
+            scope.$watch('edit', function(isEditable) {
+                if (isEditable === false) {
+                    scope.update();
+                } else {
+                    // scope.focus();
+                }
+            });
+        }
+    };
+});
+
+app.directive('ngEditableParagraph', function() {
+    return {
+        // can be in-lined or async loaded by xhr
+        // or inlined as JS string (using template property)
+        template: '<span class="editable-wrapper">' + '<span class="editclass" data-ng-hide="edit" data-ng-click="edit=true;value=model;" class="respect-newline">{{model}}</span>' + '<textarea data-ng-model="value" data-ng-blur="model=value ; edit=false" data-ng-show="edit" data-ng-enter="model=value;edit=false;" class="span8"></textarea>' + '</span>',
+        scope: {
+            model: '=ngEditableModel',
+            update: '&ngEditableParagraph'
+        },
+        replace: true,
+        link: function(scope, element, attrs) {
+
+            var value = scope.$eval(attrs.ngEditableParagraphModel);
+            console.log('value  s,,,,,,,,,,,,' ,scope, attrs.ngEditableParagraphModel , value, scope.model);
+            var placeHolder = $(element).find('.editclass');
+            value = scope.model;
+
+            if (value == undefined || (value != undefined && value.length == 0)) {
+              placeHolder.text('None');
+              placeHolder.css('background','grey');
+              placeHolder.css('color','white');
+
+              $(element).attr("title", "Empty value. Click to edit.");
+              $(element).append(placeHolder);
+            }else{
+              placeHolder.css('background','white');
+              placeHolder.css('color','black');              
+            }
+
+            scope.focus = function() {
+                element.find("input").focus();
+            };
+            scope.$watch('edit', function(isEditable) {
+                if (isEditable === false) {
+                    scope.update();
+                } else {
+                    scope.focus();
+                }
+            });
+        }
+    };
+});
+
+app.directive('ngEditableSelect', function() {
+    return {
+        template: '<span class="editable-wrapper">' + '<span data-ng-hide="edit" data-ng-click="edit=true;value=model;"><span data-ng-repeat="m in model">{{m}};</span></span>' + '<select data-ng-model="value" data-ng-show="edit" data-ng-multiple="true" multiple data-ng-options="option for option in options" data-ng-change="model=value;edit=false;">' + '<option value="">Choose Option</option>' + '</select>' + '</span>',
+        scope: {
+            text: '&ngEditableSelectText',
+            model: '=ngEditableSelectModel',
+            options: '=ngEditableSelectOptions',
+            update: '&ngEditableSelect'
+        },
+        transclude: true,
+        replace: true,
+        link: function(scope, element, attrs) {
+            scope.$watch('edit', function(isEditable) {
+                if (isEditable === false) {
+                    scope.update();
+                }
+            });
+        }
+    };
+});
+
+app.service('modalService', ['$modal',
+    function ($modal) {
+
+        var modalDefaults = {
+            backdrop: true,
+            keyboard: true,
+            modalFade: true,
+            templateUrl: 'partials-admin/modal.html'
+        };
+
+        var modalOptions = {
+            closeButtonText: 'Close',
+            actionButtonText: 'OK',
+            headerText: 'Proceed?',
+            bodyText: 'Perform this action?'
+        };
+
+        this.showModal = function (customModalDefaults, customModalOptions) {
+            if (!customModalDefaults) customModalDefaults = {};
+            customModalDefaults.backdrop = 'static';
+            return this.show(customModalDefaults, customModalOptions);
+        };
+
+        this.show = function (customModalDefaults, customModalOptions) {
+            //Create temp objects to work with since we're in a singleton service
+            var tempModalDefaults = {};
+            var tempModalOptions = {};
+
+            //Map angular-ui modal custom defaults to modal defaults defined in service
+            angular.extend(tempModalDefaults, modalDefaults, customModalDefaults);
+
+            //Map modal.html $scope custom properties to defaults defined in service
+            angular.extend(tempModalOptions, modalOptions, customModalOptions);
+
+            if (!tempModalDefaults.controller) {
+                tempModalDefaults.controller = function ($scope, $modalInstance) {
+                    $scope.modalOptions = tempModalOptions;
+                    $scope.modalOptions.ok = function (result) {
+                        $modalInstance.close(result);
+                    };
+                    $scope.modalOptions.close = function (result) {
+                        $modalInstance.dismiss('cancel');
+                    };
+                }
+            }
+
+            return $modal.open(tempModalDefaults).result;
+        };
+
+}]);
+
+
+
+app.controller('MasterCtrl', function($scope, $cookieStore) {
+    var mobileView = 992;
+    $scope.getWidth = function() { return window.innerWidth; };
+    $scope.$watch($scope.getWidth, function(newValue, oldValue)
+    {
+        if(newValue >= mobileView)
+        {
+            if(angular.isDefined($cookieStore.get('toggle')))
+            {
+                if($cookieStore.get('toggle') == false)
+                {
+                    $scope.toggle = false;
+                }            
+                else
+                {
+                    $scope.toggle = true;
+                }
+            }
+            else 
+            {
+                $scope.toggle = true;
+            }
+        }
+        else
+        {
+            $scope.toggle = false;
+        }
+
+    });
+
+    $scope.toggleSidebar = function() 
+    {
+        $scope.toggle = ! $scope.toggle;
+
+        $cookieStore.put('toggle', $scope.toggle);
+    };
+
+    window.onresize = function() { $scope.$apply(); };
+
+    $scope.apiSearch = function() {
+       /*
+        var service = VideoService, eventName = 'video';
+        if ($rootScope.currentController == 'PostController') {
+            service = PostService;
+            eventName = 'post';
+        }
+
+        service.query({query: $scope.global.search}, function(resp) {
+           $scope.$broadcast(eventName, resp);
+        });
+       */
+    }    
+});
+
+// http://jb.demonte.fr/blog/expressjs-angularjs-csrf/   https://auth0.com/blog/2014/01/07/angularjs-authentication-with-cookies-vs-token/
+angular.module('Dashboard').config(function($locationProvider, $routeProvider , $httpProvider ) {
+  //resolve: resolveController('/app/controllers/customersController.js')
+  $routeProvider.when('/users', {templateUrl: 'partials-sensor/users.html', controller: 'UserListCtrl'});
+  $routeProvider.when('/sensors', {templateUrl: 'partials-sensor/sensors.html', controller: 'AdminSensorListCtrl', public: true})
+  $routeProvider.when('/analytic', {templateUrl: 'partials-sensor/analytic.html', controller: 'AdminAnalyticCtrl', public: true})  
+  $routeProvider.otherwise({redirectTo: '/'});
+
+
+  $httpProvider.defaults.timeout = 5000; 
+  //$httpProvider.interceptors.push('authInterceptor');      
+  $httpProvider.interceptors.push(function($q, $location) {
+        return {
+            'responseError': function(response) {
+                if(response.status === 401 || response.status === 403) {
+                    $location.path('/login');
+                }
+                return $q.reject(response);
+            }
+        };
+    });
+  //$locationProvider.html5Mode(true);  // error
+});
+
+
+
+angular.module('Dashboard').factory('authInterceptor', function ($rootScope, $q, $window) {
+  return {
+    request: function (config) {
+      config.headers = config.headers || {};
+      console.log('token   ',$window.sessionStorage.token);
+      if ($window.sessionStorage.token) {
+        config.headers.Authorization = 'Bearer ' + $window.sessionStorage.token;
+      }
+      return config;
+    },
+    responseError: function (rejection) {
+      if (rejection.status === 401) {
+        // handle the case where the user is not authenticated
+      }
+      return $q.reject(rejection);
+    }
+  };
+});
+
+angular.module('Dashboard')
+.run(['$rootScope', '$location','$http','$cookies', '$window' , function ($rootScope, $location, $http, $cookies, $window ) {
+    //$http.defaults.headers.post['x-csrf-token'] = $cookies['XSRF_TOKEN'];
+
+    console.log('cookie   ', $cookies['XSRF_TOKEN']);
+
+    $http.defaults.headers.common["x-csrf-token"] = $cookies['XSRF_TOKEN'];
+
+    $rootScope.buildPagingUri = function(pageIndex, pageSize) {
+        var uri = '?l=' + pageSize + '&s=' + (pageIndex * pageSize);
+        return uri;
+    }
+
+   $rootScope.getProfile =function(token){
+        //console.log('token    ',token);
+        var encodedProfile = token.split('.')[1];
+        //console.log('profile ',encodedProfile);
+        var profile = JSON.parse($rootScope.url_base64_decode(encodedProfile));
+        //console.log('profile is ',profile); 
+        return profile;         
+    }
+
+
+    $rootScope.url_base64_decode = function(str) {
+      var output = str.replace('-', '+').replace('_', '/');
+      switch (output.length % 4) {
+        case 0:
+          break;
+        case 2:
+          output += '==';
+          break;
+        case 3:
+          output += '=';
+          break;
+        default:
+          throw 'Illegal base64url string!';
+      }
+      return window.atob(output); //polifyll https://github.com/davidchambers/Base64.js
+    }
+
+    // safe scope apply
+    $rootScope.safeApply = function(scope, fn) {
+      var phase = scope.$root.$$phase;
+      if (phase == "$apply" || phase == "$digest") {
+        if (fn && (typeof (fn) === "function")) {
+          fn();
+        }
+      } else {
+        scope.$apply(fn);
+      }
+    };
+
+   $rootScope.$on("$routeChangeStart", function (event, next, current) {
+        //console.log( next.$route );
+        if (!(next.$route && next.$route.redirectTo)) {
+            //console.log( next.$route );
+        }
+   })
+
+   $rootScope.$on('$routeChangeSuccess', function(event,data) {   
+     if (data.$route && data.$route.controller)
+       $rootScope.controller = data.$route.controller;
+   })
+
+}]);
+
+
+
+
+angular.module('Dashboard')//
+.factory('AdminUserService', function($http, $rootScope, $cookieStore, $timeout){
+    
+    var users = []; 
+    return {
+        
+        getUsers: function( page, callback ){
+            $http({
+                  url:   "/admin/users"+ $rootScope.buildPagingUri(page.index, page.size),
+                  method: "GET",
+                  headers: {"Accept":'application/json'}           
+              }).success(function (data, status, headers, config) {
+                   users = data.users;
+                   console.log('getUsers  ',status,data.users);
+                   callback(null, users);
+              }).error(function (err, status, headers, config) {
+                   console.log('getUsers error',status);
+                   callback(err ,null);   
+              });
+        },
+        searchUsers: function( query , callback){
+            $http({
+                  url:   "/admin/users"+query,
+                  method: "GET",
+                  headers: {"Accept":'application/json'}           
+              }).success(function (data, status, headers, config) {
+                   users = data.users;
+                   console.log('searchUsers  ',status,data.users);
+                   callback(null, users);
+              }).error(function (err, status, headers, config) {
+                   console.log('searchUsers error',status);
+                   callback(err ,null);   
+              });
+        },
+
+        ////////////////////////////// update the user, delete the user
+        deleteUser: function(user, callback){
+          $http({
+                url:   "/admin/users/"+user._id,
+                method: "DELETE",
+                headers: {'Content-Type': 'application/x-www-form-urlencoded',"Accept":'application/json'},
+            }).success(function (data, status, headers, config) {
+                 console.log('deleteUser success ',status,data);
+                 callback(null, data);
+            }).error(function (err, status, headers, config) {
+                 console.log('deleteUser error',status);
+                 callback(err ,null);   
+            });
+        },
+
+        updateUser: function(user, update, callback){
+          $http({
+                url:   "/admin/users/"+user._id,
+                method: "PUT",
+                headers: {'Content-Type': 'application/x-www-form-urlencoded',"Accept":'application/json'},
+                data: $.param( update )
+            }).success(function (data, status, headers, config) {
+                 console.log('updateUser success ',status,data);
+                 callback(null, data);
+            }).error(function (err, status, headers, config) {
+                 console.log('updateUser error',status);
+                 callback(err ,null);   
+            });
+        },
+
+        //////////////////////////////
+        sendUserMessageByQuery : function (message, type, query, callback){
+          console.log('sendUserMessageByQuery',message, type);
+          $http({
+                url:   "/admin/users/message/"+type,
+                method: "POST",
+                headers: {'Content-Type': 'application/x-www-form-urlencoded',"Accept":'application/json'},
+                data: $.param( {message:message, query:query} )
+            }).success(function (data, status, headers, config) {
+                 console.log('sendUserMessageByQuery success ',status,data);
+                 callback(null, data);
+            }).error(function (err, status, headers, config) {
+                 console.log('sendUserMessageByQuery error',status);
+                 callback(err ,null);   
+            });
+        },
+
+        sendUserMessageByList: function (message , type , user_list, callback){
+          console.log('sendUserMessageByList',message, type);
+          $http({
+                url:   "/admin/users/message/"+type,
+                method: "POST",
+                headers: {'Content-Type': 'application/x-www-form-urlencoded',"Accept":'application/json'},
+                data: $.param( {message:message, list:user_list } )
+            }).success(function (data, status, headers, config) {
+                 console.log('sendUserMessageByList success ',status,data);
+                 callback(null, data);
+            }).error(function (err, status, headers, config) {
+                 console.log('sendUserMessageByList error',status);
+                 callback(err ,null);   
+            });
+        },
+        /////////////////////////////
+        getUserSensors: function(username, page, callback ){
+            $http({
+                  url:   "/admin/users/"+username+"/sensors"+ $rootScope.buildPagingUri(page.index, page.size),
+                  method: "GET",
+                  headers: {"Accept":'application/json'}           
+              }).success(function (data, status, headers, config) {
+                   console.log('get User sensors success ',status,data.orders);
+                   _.map(data.orders,function(order){ order.date = new Date(order.date); });
+                   callback(null, data.orders);
+              }).error(function (err, status, headers, config) {
+                   console.log('get User sensors error',status);
+                   if(status == 404) callback(null,[]);
+                   else callback(err ,null);   
+              });
+        },
+        users: users
+
+    };
+});
+
+
+
+angular.module('Dashboard')
+  .controller('NavbarCtrl', function($rootScope, $scope, $window ,$auth) {
+    $scope.isAuthenticated = function() {
+      return $auth.isAuthenticated();
+    };
+
+    $scope.logout = function(){
+      $auth.logout()
+        .then(function() {
+
+        });      
+    }
+
+    var token = $window.localStorage['satellizer_token'] ;
+    console.log('----------------------- ',token );
+    if(token != null){
+       $rootScope.currentUser = $rootScope.getProfile(token);    
+    }    
+});
+
+
+
+
+
+angular.module('Dashboard')
+.controller('UserListCtrl', 
+  ['$rootScope', '$scope', '$location','$filter','$route','$routeParams','$timeout' , 'AdminUserService',  function($rootScope, $scope, $location, $route, $routeParams, $filter, $timeout,AdminUserService) {
+    $scope.getFormattedDate = function(date){
+      var str = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+      return str;
+    }
+
+    $scope.users = [];
+    $scope.selectUserID = 0; 
+    $scope.user = {
+      username:'', email:'',id:''
+    };
+
+    //filtering
+    $scope.filteredUsers = [];
+    $scope.filteredCount;
+
+    //paging
+    $scope.user_page_index = 0;
+    $scope.user_page_size = 20;
+
+    $scope.pageChanged = function (page) {
+        $scope.user_page_index = page;
+        $scope.getUsers();
+    };    
+
+    $scope.getUsers = function() {
+        console.log('get users   start ....');
+        AdminUserService.getUsers({index:$scope.user_page_index, size:$scope.user_page_size},function(err, users) {
+            $scope.loading = false; 
+            if(err){
+              console.log('get user fail ',err);
+            }else{
+              console.log('get users success ',users);
+              $scope.users = users;
+              if($scope.users && $scope.users.length > 0){
+                $scope.selectedUser = $scope.users[0];
+              }              
+            }
+            //$scope.users = $filter("orderBy")($scope.users, "username");         
+            //console.log("log out current user :",$rootScope.currentUser);
+        });
+    };
+
+    $scope.searchUsers = function(){
+       console.log('try search users ...',$scope.user_search_key);
+       if($scope.user_search_key.length == 0 ) return;
+       AdminUserService.searchUsers('?name='+$scope.user_search_key,function(err, users){
+          if(err){
+             console.log('search users error',err);
+          }else{
+            console.log('search users success  ',users);
+            $scope.users = users;
+            if($scope.users.length > 0){
+              $scope.selectedUser = $scope.users[0];
+            } 
+            // $scope.$apply();  errors
+          }
+          $scope.user_search_key = '';
+       })
+    }
+
+    $scope.selectUserFilter = function(data){
+      console.log('selectUserFilter   ',$scope.user_filter_key);
+      if($scope.user_filter_key == 0 ){
+          $scope.getUsers();
+      }
+ 
+    }
+
+    // selecting the user
+    $scope.selectedUser = {};
+    $scope.selectUser = function($index){
+
+        if( !$scope.users && $scope.users.length <=0 ) return;
+
+        $scope.selectedUser = $scope.users[$index];
+        console.log('select user ', $scope.selectedUser, $('#sensor_tab').hasClass('active'), $('#profile_tab').hasClass('active'));
+        if($('#sensor_tab').hasClass('active')){
+            $scope.loadUserSensors();           
+        }
+
+        if($('#profile_tab').hasClass('active')){
+
+        }
+    }    
+
+    //  user detail
+    $scope.sendMessage = function(type, message){
+        console.log('sendSMS to ',$scope.selectedUser, type , message);
+        AdminUserService.sendUserMessageByList(message, type, [$scope.selectedUser],function(err, data){
+           if(err){
+              console.log('send the user the sms  error',err);
+           }else{
+              console.log('send user the sms (success  !!!!!)',data); 
+              $scope.message_content = '';
+           }
+        })
+    }
+
+    $scope.lockUser = function(){
+        console.log('lockUser on ',$scope.selectedUser);
+        /*
+        AdminUserService.updateUser($scope.selectedUser,{'lock':false},function(err,data){
+           if(err){
+               console.log('update user role error ',err);
+           }else{
+               console.log('update user info success ',data);
+           }
+        })
+         */
+    }
+
+    $scope.updateUserRole = function(role){
+        console.log('updateUserRole on ',$scope.selectedUser, role);
+
+        if($scope.selectedUser === undefined || $scope.currentUser.role != 'admin') return;
+
+        AdminUserService.updateUser($scope.selectedUser,{'role':role},function(err,data){
+           if(err){
+               console.log('update user role error ',err);
+           }else{
+               console.log('update user info success ',data);
+               $scope.selectedUser.role = role;
+           }
+        })
+    }
+
+    $scope.deleteUser = function(){
+        console.log('deleteUser on ',$scope.selectedUser);
+        if($scope.selectedUser === undefined || $scope.currentUser.role != 'admin') return;
+
+        AdminUserService.deleteUser($scope.selectedUser, function(err,data){
+           if(err){
+               console.log('delete user failed ',err);
+           }else{
+               console.log('delete user success ',data);
+           }
+        })
+    }            
+
+    //paging on orders
+    $scope.sensor_page_index = 0;
+    $scope.sensor_page_size = 20;
+    $scope.sensors = [];
+
+/*
+    $scope.loadUserSensors = function(){
+        var username = $scope.selectedUser.username;
+
+        if( $scope.selectedUser._id === undefined) return;
+        console.log('loadUserSensors   ',$scope.selectedUser._id);
+
+        AdminUserService.getUserSensors($scope.selectedUser._id,{index:$scope.sensor_page_index, size:$scope.sensor_page_size},function(err,data){
+            if(err){
+                console.log(err);
+            }else{
+                $scope.sensors = data;
+            }
+        })
+    }
+*/
+    $scope.getUsers();   
+}]);
+
+
+
+
+
+
+
+
+
+angular.module('Dashboard')//
+.factory('AdminSensorService', function($http, $rootScope, $cookieStore, $timeout){
+    
+    var sensors = [];
+    var records = [];
+   
+    return { 
+
+        createNewSensor : function(sensor, callback){  
+            $http({
+                url: "/sensor/new",
+                method: "POST",
+                data: $.param( sensor ),
+                headers: {'Content-Type': 'application/x-www-form-urlencoded',"Accept":'application/json'}
+            }).success(function (data, status, headers, config) {
+                console.log('createNewSensor success ',status,data);
+                callback(null, data);
+            }).error(function (err, status, headers, config) {
+                console.log('createNewSensor error',data, status, headers);
+                callback(err,null);
+            });     
+        },
+
+        getSensors : function(page, query , callback){
+            $http({
+                  url:   "/sensors"+ $rootScope.buildPagingUri(page.index, page.size) + query,
+                  method: "GET",
+                  headers: {"Accept":'application/json'}           
+              }).success(function(data) {
+                    sensors = data.sensors; 
+                    _.map(sensors,function(obj){  console.log(obj.date); obj.date = new Date(obj.date); })              
+                    console.log(data);
+                    callback(null,data.sensors);
+                }).error(function(err){
+                    console.log('get sensors by url error',status);
+                    callback(err,null);
+                })    
+        },
+
+        /// sensor detail
+         deleteSensor : function(sensor,callback){  
+          console.log("delete Sensor ",sensor.date);
+            $http({
+                  url:  "/sensors/"+sensor.date,
+                  method: "DELETE",
+              }).success(function (data, status, headers, config) {
+                  if(data.data == 1){
+                     sensors.splice(index, 1);
+                  }
+                  console.log('deletesensors  ',status,data);
+                  callback(null,data);                  
+              }).error(function (err, status, headers, config) {
+                  console.log('deletesensors error',status);    
+                  callback(err,null);        
+              });     
+        }, 
+        updateSensor : function(sensor,callback){
+            $http({
+                  url:  "/sensors/"+sensor.date,
+                  method: "PUT",
+              }).success(function (data, status, headers, config) {
+                  console.log('updatesensors  ',status,data);
+                  callback(null,data);                  
+              }).error(function (err, status, headers, config) {
+                  console.log('updatesensors error',status);   
+                  callback(err,null);        
+              });     
+        },
+        /////////////////////////////////////////////////////////////////////////////////////
+        getSensorRecords : function(date, page, callback){
+            console.log('getCatalogDetail   ',date);
+            $http({
+                  url:   "/sensors/"+date+ $rootScope.buildPagingUri(page.index, page.size),
+                  method: "GET",
+                  headers: {"Accept":'application/json'}           
+              }).success(function(data) {
+                    records = data.records; 
+                    console.log(data.records);
+                    _.map(data.records,function(record){ record.date = date; });
+                    callback(null,data.records);
+                }).error(function(err){
+                    console.log('get catalogs by url error',status);
+                    callback(err,null);        
+                })        
+        },
+        sensors: sensors,
+        records:records
+    };
+});
+
+
+angular.module('Dashboard')
+.controller('AdminSensorListCtrl', 
+  ['$rootScope', '$scope', '$location', '$filter','$route','$routeParams','$timeout' ,'AdminSensorService','modalService', function($rootScope, $scope, $location,$route, $routeParams, $filter, $timeout, AdminSensorService, modalService) {
+
+    $scope.sensors = [];
+    $scope.selectSensorID = 0;
+
+    //filtering
+    $scope.filteredSensors = [];
+    $scope.filteredCount_sensor;
+
+    //paging
+    $scope.selectedSensor = {};
+    $scope.sensor_page_index = 0;
+    $scope.sensor_page_size = 20;
+
+
+    $scope.records = [];
+    $scope.selectRecordID = 0;
+    //filtering
+    $scope.filteredRecords = [];
+    $scope.filteredCount_record;
+    //paging
+    $scope.selectedRecord = {};
+    $scope.record_page_index = 0;
+    $scope.record_page_size = 20;
+
+    $scope.getFormattedDate = function(date){
+      var str = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+      return str;
+    }
+
+    $scope.getSensors = function(page, query) {
+        AdminSensorService.getSensors(page,query,function(err, sensors) {
+            $scope.loading = false; 
+            if(err){
+
+            }else{
+              console.log('get all sensors ',sensors);
+              $scope.sensors = sensors;
+              if($scope.sensors.length > 0){
+                $scope.selectedSensor = $scope.sensors[0];
+              }               
+              //$scope.sensors = $filter("orderBy")($scope.sensors, "date");                       
+            }         
+            //console.log("log out current user :",$rootScope.currentUser);
+        });
+    };
+
+    $scope.searchSensors = function(){
+       console.log('try search sensor ...',$scope.sensor_search_key);
+       if($scope.sensor_search_key.length == 0 ) return;
+
+    },
+
+    $scope.selectSensorFilter = function(){
+      console.log('selectSensorFilter   ',$scope.sensor_filter_key);
+      var today = new Date();today.setHours(0, 0, 0, 0);
+      var timestamp = today.getTime()/1000;
+      console.log(timestamp ,  new Date(timestamp*1000));
+
+      if($scope.sensor_filter_key == 0 ){
+        console.log('try to get all Sensor ...');
+        $scope.getSensors({index:$scope.sensor_page_index, size:$scope.sensor_page_size},'');
+      }else if($scope.sensor_filter_key == 1){
+        console.log('try to get old Sensor ...');
+        $scope.getSensors({index:$scope.sensor_page_index, size:$scope.sensor_page_size},'&end='+timestamp );
+      }else if($scope.sensor_filter_key == 2){
+        console.log('try to get new Sensor ...');
+        $scope.getSensors({index:$scope.sensor_page_index, size:$scope.sensor_page_size},'&begin='+timestamp);
+      }
+    }
+
+
+    // sensors detail
+    $scope.deleteSensor = function(index){
+        var sensor = $scope.sensor[index];
+        var modalOptions = {
+              closeButtonText: 'Cancel',
+              actionButtonText: 'Delete Sensor',
+              headerText: 'Delete Sensor on ' + $scope.getFormattedDate(sensor.date) + '?',
+              bodyText: 'Are you sure you want to delete this sensor?'
+          };
+
+        modalService.showModal({}, modalOptions).then(function (result) {
+            console.log('delete ');
+            AdminSensorService.deleteSensor(sensor,function(err, data) {
+                $scope.loading = false; 
+                if(err){
+
+                }else{
+                  console.log('delete Sensor ',data);
+                }         
+            });
+
+        }); 
+    }
+
+    $scope.updateSensor = function(index){
+        var sensor = $scope.sensors[index];
+        var modalOptions = {
+              closeButtonText: 'Cancel',
+              actionButtonText: 'Update Sensor',
+              headerText: 'Update Sensor on ' + $scope.getFormattedDate(sensor.date) + '?',
+              bodyText: 'Are you sure you want to update this sensor?'
+          };
+
+        modalService.showModal({}, modalOptions).then(function (result) {
+            console.log('update ');
+        }); 
+    }
+
+    $scope.getSensorRecords = function(date){
+        AdminSensorService.getSensorRecords(date,{index:$scope.record_page_index, size:$scope.record_page_size},function(err, records) {
+            $scope.loading = false; 
+            if(err){
+
+            }else{
+              console.log('get all records ',records);
+              $scope.records = records;
+              if($scope.records.length > 0){
+                $scope.selectedRecord = $scope.records[0];
+              }               
+            }         
+            //console.log("log out current user :",$rootScope.currentUser);
+        });
+    }
+
+    $scope.$on('EVENT_CREATECATALOG', function(data) {
+        console.log('event found',data);
+    });
+
+    /////////////////////////////////////////////////////////////////////////////////// order
+ 
+
+      $scope.getSensors({index:$scope.sensor_page_index, size:$scope.sensor_page_size},'');
+}]);
+
+
+
+
+
+
+// http://chariotsolutions.com/blog/post/getting-chatty-angular-socket-io-nodeexpress-bootstrap/
+/*
+angular.module('Dashboard').factory('mySocket', function (socketFactory) {
+  var mySocket = socketFactory({
+    ioSocket:  io.connect('/some/path'),
+    prefix: 'foo~'
+  });
+
+  mySocket.forward('error');
+  return mySocket;
+})
+
+angular.module('Dashboard').
+controller('HeaderCtrl', function ($rootScope, $scope, $location, mySocket) {
+  mySocket.on('foo~error', function () {
+    console.log('foo error');
+  });
+
+  mySocket.on('disconnect', function(){});
+
+
+  mySocket.forward('someEvent', $scope);
+  $scope.$on('socket:someEvent', function (ev, data) {
+      $scope.theData = data;
+      console.log('socket io',data);
+  });
+
+
+  $scope.$on('$destroy', function (event) {
+        mySocket.removeAllListeners();
+  });
+
+});
+*/
+
+
+
+
+
+
+</script>
+
+</body>
+</html>

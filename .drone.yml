@@ -1,0 +1,12 @@
+image: bradrydzewski/node:0.10
+env:
+  - GOPATH=/var/cache/drone
+script:
+services:
+  - mongodb
+  - rabbitmq
+  - redis
+notify:
+  email:
+    recipients:
+      - helxsz@gmail.com

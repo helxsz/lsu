@@ -1,0 +1,140 @@
+<div class="row">
+  <div class="col-lg-6">
+    <div class="widget">
+      <div class="widget-title">
+        <i class="fa fa-tasks"></i> Sensors 
+        <select class=" input-sm pull-right" style="margin-right: 5px;" ng-change="selectSensorFilter()" ng-model="sensor_filter_key">
+          <option value="0">All</option>
+          <option value="1" ng-selected="selected"> Old </option>
+          <option value="2" ng-selected="selected"> New </option>
+        </select>
+
+      </div>
+      <div class="widget-body medium no-padding">
+        <div class="table-responsive fadeInDown  animated" ng-show="sensors.length > 0">
+          <table class="table" >
+            <tbody>
+              <tr ng-repeat="sensor in sensors" data-id={{sensor._id}} ng-class="{active : selectSensorID == $index}" ng-click="selectSensorID=$index">
+                  <td width="1" style="min-width: 1px;" ></td>
+                  <td ng-click="getSensorRecords(sensor.date)"><i class="fa fa-clock-o"></i><strong>{{ getFormattedDate(sensor.date) }}</strong></td>
+                  <td width="1" class="td-divider"></td>
+                  <td><strong>{{  sensor.type }}</strong></td>
+                  <td><strong>{{  sensor.location }}</strong></td>
+                  <td>
+                     <p><button class="btn btn-primary btn-xs" data-title="Edit" data-toggle="modal" data-target="#edit"data-placement="top" rel="tooltip" data-id={{sensor._id}} ng-click="updateSensor($index)" ><span class="glyphicon glyphicon-pencil"></span></button></p>
+                  </td>
+                  <td>
+                    <p><button class="btn btn-danger btn-xs" data-title="Delete" data-toggle="modal" data-target="#delete" data-placement="top" rel="tooltip" data-id={{sensor._id}} ng-click="deleteSensor($index)" ><span class="glyphicon glyphicon-trash"></span></button></p>
+                  </td>
+              </tr> 
+            </tbody>
+          </table>
+        </div>
+
+            <div class="col-md-3" ng-show="sensors.length > 0">
+                <div class="controls pull-right hidden-xs">
+                    <a class="left btn btn-success" > <i class="fa fa-arrow-left"></i></a>
+                    <span> {{sensor_page_index}} </span>
+                    <a class="right btn btn-success">  <i class="fa fa-arrow-right"></i> </a>
+                </div>
+            </div>
+
+        <div class="widget-content" style="text-align: center; height: 100%;" ng-show="sensors.length == 0">
+          <div class="no-users fadeInUp animated">
+            <i class="fa fa-meh-o"></i>
+            <div  style="margin-top: 15px;">
+              <h3>You don't have any sensors yet</h3>
+              <p>
+                You can start by creating a sensor on your own.
+              </p>
+            </div>
+            <button class="btn btn-large" ng-click="createSensor()" ng-show="!searchTerms">Create a New Sensor</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="widget">
+      <div class="widget-title">
+        <i class="fa fa-users"></i> Records
+      </div> 
+      <div class="widget-body medium no-padding"> 
+        <div class="table-responsive fadeInDown  animated" ng-show="records.length > 0">             
+            <table class="table table-condensed table-hover">
+                <thead>
+                    <tr> 
+                        <th class="span3"></th>
+                        <th class="span3">Uid</th>
+                        <th class="span3"></th>                                             
+                        <th class="span3">Value</th>                           
+                    </tr>
+                </thead>
+                
+                <tbody >                  
+                    <tr ng-repeat="record in records" data-id={{record._id}} ng-class="{active : selectRecordID == $index}" ng-click="selectRecordID=$index">
+                       <td width="1" style="min-width: 1px;" ></td>
+                       <td><strong>{{record.uid.subStr(0,5)}}</strong></td>
+                       <td width="1" class="td-divider"></td>     
+                       <td><strong>{{record.value}}</strong></td>
+                          
+                       <!--
+                        <td><p><button class="btn btn-primary btn-xs" data-title="Edit" data-toggle="modal" data-target="#edit"data-placement="top" rel="tooltip" 
+                          data-id={{order._id}} href="#editModal" ng-click="updateOrderStatus($index)"><span class="glyphicon glyphicon-pencil"></span></button></p></td>
+                        <td><p><button class="btn btn-danger btn-xs" data-title="Delete" data-toggle="modal" data-target="#delete" data-placement="top" rel="tooltip"><span class="glyphicon glyphicon-trash"></span></button></p></td> 
+                      -->
+                      <td>
+                        <div class="dropdown">
+                          <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown">
+                            <i class="fa fa-bars"></i>
+                            <span class="caret"></span>
+                          </button>
+                          <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+
+                          </ul>
+                        </div>
+                      </td> 
+
+                    </tr>                       
+                </tbody>
+                                    
+            </table>
+
+            <div class="col-md-3" ng-show="users.length > 0">
+                <div class="controls pull-right hidden-xs">
+                    <a class="left btn btn-success" > <i class="fa fa-arrow-left"></i></a>
+                    <span> {{record_page_index}} </span>  
+                    <a class="right btn btn-success">  <i class="fa fa-arrow-right"></i> </a>
+                </div>
+            </div>
+
+
+            <div class="widget-content" style="text-align: center; height: 100%;" ng-show="records.length == 0">
+              <div class="no-users fadeInUp animated">
+                <i class="fa fa-meh-o"></i>
+                <div  style="margin-top: 15px;">
+                  <h3>You don't have any records yet</h3>
+                  <p>
+                      No records
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="clearfix"></div>
+            <ul class="pagination pull-right" ng-show="records.length == 40">
+              <li class="disabled"><a href="#"><span class="glyphicon glyphicon-chevron-left"></span></a></li>
+              <li class="active"><a href="#">1</a></li>
+              <li><a href="#">2</a></li>
+              <li><a href="#">3</a></li>
+              <li><a href="#">4</a></li>
+              <li><a href="#">5</a></li>
+              <li><a href="#"><span class="glyphicon glyphicon-chevron-right"></span></a></li>
+            </ul>          
+          </div> 
+        </div>
+      </div>                   
+  </div>
+</div>

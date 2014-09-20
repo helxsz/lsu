@@ -1,0 +1,331 @@
+<style>
+.widget-content.section {
+background: #f9fafc;
+overflow: visible;
+margin-bottom: 10px;
+padding-bottom: 15px;
+border-bottom: 1px solid #E9E9EB;
+border-top: 1px solid #E9E9EB;
+}
+
+.user-prop > span {
+font-size: 14px;
+color: #555;
+}
+
+.user-prop > span.label {
+cursor: pointer;
+vertical-align: middle;
+-webkit-transition: background 0.1s linear;
+-moz-transition: background 0.1s linear;
+-o-transition: background 0.1s linear;
+transition: background 0.1s linear;
+}
+.user-prop .label {
+font-size: 12px;
+padding: 4px 7px;
+color: white;
+}
+
+.label {
+text-shadow: none;
+font-weight: 600;
+font-size: 11px;
+-webkit-border-radius: 2px;
+-moz-border-radius: 2px;
+border-radius: 2px;
+}
+.user-prop > span:not(.label) {
+border-bottom: 1px dashed #d0d0d0;
+cursor: pointer;
+}
+
+.user-prop  span:not(.label) {
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+max-width: 100%;
+display: inline-block;
+}
+
+
+
+.nav-tabs>li.active {
+border-bottom: 3px solid #87D37C;
+color: #555;
+}
+
+</style>
+<div class="row" >
+    <div class="col-lg-6">
+      <div class="widget">
+        <div class="widget-title">
+          <i class="fa fa-users"></i> Users
+
+          <input type="text" placeholder="Search" class="form-control input-sm pull-right" ng-enter="searchUsers()" ng-model="user_search_key"/>
+
+         <select class=" input-sm pull-right" style="margin-right: 5px;" ng-change="selectUserFilter()" ng-model="user_filter_key">
+          <option value="0">All</option>
+          <option value="1" ng-selected="selected"> Active </option>
+         </select>
+
+
+          <div class="clearfix"></div>
+        </div>
+        <div class="widget-body medium no-padding">
+          <div class="table-responsive fadeInDown  animated" ng-show="users.length > 0">
+            <table class="table">
+              <thead>
+                <tr >
+                  <th class="span3"></th>
+                  <th class="text-center">ID</th>
+                  <th class="span3"></th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Created</th>
+                  <th> </th>
+                </tr>
+              </thead>
+              <tbody >
+                 <tr ng-repeat="user in users" data-id={{user._id}} ng-class="{active : selectUserID == $index}" ng-click="selectUser($index)">
+                    <td width="1" style="min-width: 1px;" ></td>
+                    <td class="text-center">{{$index+1}}</td>
+                    <td width="1" class="td-divider"></td>
+                    <td>{{user.username}}</td>
+                    <td>{{user.email}}</td>
+                    <td>{{user.role}}</td>
+                    <td><i class="fa fa-clock-o"></i>{{user.cdate.toString()}}</td>
+
+                    <td>
+
+                    </td>
+
+                 </tr>
+              </tbody>
+            </table>
+          </div>
+
+            <div class="col-md-3" ng-show="users.length > 0">
+                <div class="controls pull-right hidden-xs">
+                    <a class="left btn btn-success" > <i class="fa fa-arrow-left"></i></a>
+                    <span> {{user_page_index}} </span>
+                    <a class="right btn btn-success">  <i class="fa fa-arrow-right"></i> </a>
+                </div>
+            </div>
+
+
+
+          <div class="widget-content" style="text-align: center; height: 100%;" ng-show="users.length == 0">
+            <div class="no-users fadeInUp animated">
+              <i class="fa fa-meh-o"></i>
+              <div  style="margin-top: 15px;">
+                <h3>He doesn't have any users yet</h3>
+                <p>
+                  You can start by promoting him to use your service.
+                </p>
+              </div>
+              <button class="btn btn-large" ng-click="createUser()" ng-show="!searchTerms">Create a New User</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6" >
+      <div class="widget">
+        <div class="widget-title">
+          <i class="fa fa-users"></i> Users
+          <input type="text" placeholder="Search" class="form-control input-sm pull-right" />
+          <div class="clearfix"></div>
+        </div>
+        <div class="widget-body medium no-padding">
+          <tabset>
+            <tab heading="Profile" id="profile_tab">
+
+              <div class="widget-content" style="overflow: visible;">
+                <div class="row">
+                  <div class="col-md-6"> <img class="gravatar-large" title="Gravatar" src="/user_icon.png">  </div>
+                  <div class="user-title col-md-6">
+                    <div class="dropdown">
+                      <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown">
+                        <i class="fa fa-bars"></i>
+                        <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+                        <li role="presentation"><a role="menuitem" tabindex="-1" ng-click="sendSMS()">Send SMS</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" ng-click="sendEmail()">Send Email</a></li>
+                        <li role="presentation" class="divider"></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" ng-click="lockUser()">Lock User</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" ng-click="deleteUser()">Delete User</a></li>
+                      </ul>
+                    </div>
+                    <div>
+                      <i login-indicator="user.created_at" icon="time" title="Created" style="margin-right: 4px;" class="ng-isolate-scope ng-scope"><i ng-class="{'icon-signin': !icon, 'icon-time': icon=='time', orange: recentlyLoggedIn}" style="font-size: 13px;" class="icon-time"></i></i>&nbsp;<span data-original-title="Created: September 05, 2014 16:49" data-placement="bottom" data-container="body" class="ng-binding">5 days ago</span>
+                      <br>
+                      <i login-indicator="user.last_login_at" title="Last Login" style="margin-right: 4px;" class="ng-isolate-scope ng-scope"><i ng-class="{'icon-signin': !icon, 'icon-time': icon=='time', orange: recentlyLoggedIn}" style="font-size: 13px;" class="icon-signin"></i></i>&nbsp;<span data-original-title="Logged In:  -" data-placement="bottom" data-container="body" class="ng-binding">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="widget-content section" style="display: block;">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="user-prop">
+                      <label>Name</label> 
+                      <span ng-editable="update111(profile.username)" ng-editable-model="profile.username"></span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="user-prop">
+                      <label>Email</label> 
+                      <span ng-editable="update111(profile.username)" ng-editable-model="profile.email"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="user-prop">
+                      <label>Login</label> 
+                      <span ng-editable="update111(profile.username)" ng-editable-model="profile.email"></span>
+
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="user-prop">
+                      <label>Email</label>
+                      <span ng-editable="update111(profile.username)" ng-editable-model="profile.email"></span>                       
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row" ng-show=" ( currentUser.role == 'admin') ">
+                  <div class="col-md-6">
+                    <div class="user-prop">
+                       <label>Role</label>
+                       <span> 
+                          <select class=" input-sm pull-right" style="margin-right: 5px;"  ng-model="role_option" ng-change="updateUserRole(role_option)" >
+                            <option value="admin">Admin</option>
+                            <option value="user" ng-selected="selected">User</option>
+                            <option value="moderator" ng-selected="selected">Moderator</option>
+                          </select>
+                       </span>   
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="user-prop">
+                       <label>Delete</label>
+                       <span> 
+                          <button class="btn btn-small" style="background:#CC0000" ng-click="deleteUser()" >Delete the User</button>
+                       </span>   
+                    </div>
+                  </div>  
+                </div>
+
+              </div>
+
+            </tab>
+            <tab select="loadUserOrders()" id="order_tab">
+              <tab-heading>
+                <i class="glyphicon glyphicon-bell"></i> Orders
+              </tab-heading>
+
+                  <table class="table table-condensed table-hover" ng-show="orders.length > 0">
+                      <thead>
+                          <tr> 
+                              <th class="span3"></th>
+                              <th class="span3">date</th>
+                              <th class="span3"></th>
+                              <th class="span3">quantity</th>                           
+                              <th class="span3">price</th>
+                              <th class="span3">code<i class="fa fa-info-circle" tooltip-placement="top" tooltip="Unique Order Code" ></i>
+                              </th>
+                              <th class="span3">location<i class="fa fa-info-circle" tooltip-placement="top" tooltip="Location for pick up" ></i></th>
+                              <th class="span3">status<i class="fa fa-info-circle" tooltip-placement="top" tooltip="Status for pick up" ></i></th>
+                              <th class="span3">time<i class="fa fa-info-circle" tooltip-placement="top" tooltip="Time for pick up" ></i></th>
+                          </tr>
+                      </thead>
+            
+                      <tbody >                  
+                          <tr ng-repeat="order in orders" data-id={{order._id}} ng-class="{active : selectOrderID == $index}" ng-click="selectOrderID=$index">
+                              <td width="4" style="min-width: 4px;" ></td>
+                              <td><i class="fa fa-clock-o"></i><strong>{{  getFormattedDate(order.date) }}</strong></td>
+                              <td width="1" class="td-divider"></td>
+                              <td><strong>{{order.quantity}}</strong></td>
+                              <td><i class="fa fa-gbp"></i><strong>{{order.price}}</strong></td>
+                              <td><strong style="background: #87D37C;color:#ffffff;text-shadow: none;
+          font-weight: 600;padding:5px;">{{order.code}}</strong></td>
+                              <td><i class="fa fa-location-arrow"></i><strong>{{order.location}}</strong></td>
+                              <td><strong>{{order.status}}</strong></td>                    
+                              <td><strong>{{moment(order.time).fromNow()}}</strong></td>    
+
+                              <td><p><button class="btn btn-primary btn-xs" data-title="Edit" data-toggle="modal" data-target="#edit"data-placement="top" rel="tooltip" 
+                                data-id={{order._id}} href="#editModal" ng-click="updateOrder($index)"><span class="glyphicon glyphicon-pencil"></span></button></p>
+                              </td>
+                              <td><p><button class="btn btn-danger btn-xs" data-title="Delete" data-toggle="modal" data-target="#delete" data-placement="top" rel="tooltip" ng-click="cancelOrder($index)"><span class="glyphicon glyphicon-trash"></span></button></p>
+                              </td>                                        
+                          </tr>                     
+                      </tbody>          
+                  </table>
+                
+            <div class="col-md-3" ng-show="users.length > 0">
+                <div class="controls pull-right hidden-xs">
+                    <a class="left btn btn-success" > <i class="fa fa-arrow-left"></i></a>
+                    <span> {{order_page_index}} </span>
+                    <a class="right btn btn-success">  <i class="fa fa-arrow-right"></i> </a>
+                </div>
+            </div>
+
+
+                <div class="widget-content" style="text-align: center; height: 100%;" ng-show="orders.length == 0">
+                  <div class="no-users fadeInUp animated">
+                    <i class="fa fa-meh-o"></i>
+                    <div  style="margin-top: 15px;">
+                      <h3>He does't have any orders yet</h3>
+                      <p>
+                        He can start by creating a order .
+                      </p>
+                    </div>
+                    <button class="btn btn-large"  ng-show="!searchTerms">Promote</button>
+                  </div>
+                </div>
+
+
+            </tab>
+
+            <tab select="" id="message_tab">
+              <tab-heading>
+                <i class="glyphicon glyphicon-bell"></i> Message
+              </tab-heading>
+
+                 <form role="form" ng-submit=" sendMessage( message_option, message_content)">
+                    <h3>Message him</h3>
+                    
+                    <div class="required-field-block">
+                        <select class=" input-sm pull-right" style="margin-right: 5px;" ng-model="message_option">
+                          <option value="email">Email</option>
+                          <option value="sms" ng-selected="selected"> SMS </option>
+                        </select>                        
+                         <div class="required-icon">
+                            <div class="text"></div>
+                        </div>
+                    </div>
+             
+                    <div class="required-field-block">
+                        <textarea rows="5" class="form-control" placeholder="Message" ng-model="message_content"></textarea>
+                        <div class="required-icon">
+                            <div class="text"></div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary">Send</button>
+                </form>             
+
+            </tab>
+
+          </tabset>
+      </div>
+    </div>
+  </div>
+</div>
